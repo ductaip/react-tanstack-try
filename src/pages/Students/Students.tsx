@@ -3,25 +3,18 @@ import { getStudents } from 'apis/students.api'
 import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Student, Students as studentType } from 'types/students.type'
-import { useSearchParams } from 'react-router-dom'
+import { useQueryString } from 'utils/utils'
 
-export default function Students() {
-  // const [students, setStudents] = useState<studentType>([])
-  // const [isLoading, setIsLoading] = useState<boolean>(false)
+export default function Students() { 
+  //query string
+  const queryString : {page?: string} = useQueryString()
+  const page = Number(queryString.page) || 1
 
-  // useEffect(() => {
-  //   setIsLoading(true)
-  //   getStudents(1, 10).then((res) => {
-  //     setStudents(res.data)
-  //   }).finally(() => setIsLoading(false))
-  // }, [])
-  const [seachParams] = useSearchParams()
-  const searchParamsObject = Object.fromEntries([...seachParams])
-  console.log(searchParamsObject)
-  // const result = useQuery({
-  //   queryKey: ['students', page],
-  //   queryFn: () => getStudents(page , 10)
-  // })
+  //fetch students by using useQuery
+  const {data, isLoading} = useQuery({
+    queryKey: ['students', page], //deep comparison
+    queryFn: () => getStudents(page , 10)
+  })
   
   return (
     <div>
@@ -65,7 +58,7 @@ export default function Students() {
               </tr>
             </thead>
             <tbody>
-              {students.map((student, index) => (
+              {data?.data.map((student, index) => (
                 <tr key={index} className='border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600'>
                 <td className='py-4 px-6'>{index}</td>
                 <td className='py-4 px-6'>
