@@ -1,7 +1,33 @@
+import { useMutation } from "@tanstack/react-query"
+import { useMatch } from "react-router-dom"
+import http from '../../utils/http'
+import { addStudent } from "apis/students.api"
+import { Student } from "types/students.type"
+import { useState } from "react"
+
+type FormStateType = Omit<Student, 'id'>
+const initialFormState: FormStateType = {
+  avatar: '',
+  email: '',
+  btc_address: '',
+  country: '',
+  first_name: '',
+  last_name: '',
+  gender: ''
+}
+
 export default function AddStudent() {
+  const [formState, setFormState] = useState<FormStateType>(initialFormState)
+  const addMatch = useMatch('/students/add')
+  const isAddMode = Boolean(addMatch)
+
+  const {mutate} = useMutation({
+    mutationFn: (body: FormStateType) => addStudent(body)
+  })
+
   return (
     <div>
-      <h1 className='text-lg'>Add/Edit Student</h1>
+      <h1 className='text-lg'>{isAddMode ? 'Add' : 'Edit'} Student</h1>
       <form className='mt-6'>
         <div className='group relative z-0 mb-6 w-full'>
           <input
