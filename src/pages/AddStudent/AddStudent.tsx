@@ -3,7 +3,8 @@ import { useMatch } from "react-router-dom"
 import http from '../../utils/http'
 import { addStudent } from "apis/students.api"
 import { Student } from "types/students.type"
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { isAxiosError } from "utils/utils"
 
 type FormStateType = Omit<Student, 'id'>
 const initialFormState: FormStateType = {
@@ -16,14 +17,25 @@ const initialFormState: FormStateType = {
   gender: 'other'
 }
 
+type FormError = {
+  [key in keyof FormStateType]?: string
+} | null
+
 export default function AddStudent() {
   const [formState, setFormState] = useState<FormStateType>(initialFormState)
   const addMatch = useMatch('/students/add')
   const isAddMode = Boolean(addMatch)
 
-  const {mutate} = useMutation({
+  const {mutate, error} = useMutation({
     mutationFn: (body: FormStateType) => addStudent(body)
   })
+
+  const errorForm: FormError = useMemo(() => {
+    if(isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
+      return error.response?.data.error
+    }
+    return null
+  }, [error])
 
   const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => 
     setFormState((prev) => ({...prev, [name]: event.target.value}))
@@ -54,6 +66,7 @@ export default function AddStudent() {
           >
             Email address
           </label>
+          
         </div>
 
         <div className='group relative z-0 mb-6 w-full'>
