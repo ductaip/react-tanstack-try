@@ -1,10 +1,10 @@
-import { useMutation } from "@tanstack/react-query"
-import { useMatch } from "react-router-dom"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMatch, useParams } from "react-router-dom"
 import http from '../../utils/http'
-import { addStudent } from "apis/students.api"
+import { addStudent, getStudent } from "apis/students.api"
 import { Student } from "types/students.type"
 import { useMemo, useState } from "react"
-import { isAxiosError } from "utils/utils"
+import { isAxiosError, useQueryString } from "utils/utils"
 import classNames from "classnames"
 import { ToastContainer, toast } from 'react-toastify';
 
@@ -27,12 +27,22 @@ export default function AddStudent() {
   const [formState, setFormState] = useState<FormStateType>(initialFormState)
   const addMatch = useMatch('/students/add')
   const isAddMode = Boolean(addMatch)
+  const { id } = useParams<{ id: string }>()
+  console.log(id)
 
   const {mutate, error, data, reset} = useMutation({
     mutationFn: (body: FormStateType) => addStudent(body)
   })
- 
-  
+
+  useQuery({
+    queryKey: ['student', id],
+    queryFn: () => getStudent(id as string),
+    enabled: id !== undefined,
+    onSuccess: (data) => {
+      setFormState(data.data)
+    }
+  })
+
 
   const errorForm: FormError = useMemo(() => {
     if(isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
@@ -43,8 +53,8 @@ export default function AddStudent() {
 
   const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState((prev) => ({...prev, [name]: event.target.value}))
-    if(data || error) reset()
-  } 
+    if (data || error) reset()
+  }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -56,6 +66,7 @@ export default function AddStudent() {
     })
     // console.log("check>>>>",formState)
   }
+
   return (
     <div>
       <h1 className='text-lg'>{isAddMode ? 'Add' : 'Edit'} Student</h1>
@@ -93,8 +104,8 @@ export default function AddStudent() {
                   id='gender-1'
                   type='radio'
                   name='gender'
-                  value='male'
-                  checked={formState.gender === 'male'}
+                  value='Male'
+                  checked={formState.gender === 'Male'}
                   onChange={handleChange('gender')}
                   className='h-4 w-4 border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600'
                 />
@@ -107,8 +118,8 @@ export default function AddStudent() {
                   id='gender-2'
                   type='radio'
                   name='gender'
-                  value='female'
-                  checked={formState.gender === 'female'}
+                  value='Female'
+                  checked={formState.gender === 'Female'}
                   onChange={handleChange('gender')}
                   className='h-4 w-4 border-gray-300 bg-gray-100 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-600'
                 />

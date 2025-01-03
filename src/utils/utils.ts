@@ -2,8 +2,8 @@ import axios, { AxiosError } from 'axios'
 import { useSearchParams } from 'react-router-dom'
 
 export const useQueryString = () => {
-  const [seachParams] = useSearchParams()
-  const searchParamsObject = Object.fromEntries([...seachParams])
+  const [searchParams] = useSearchParams()
+  const searchParamsObject = Object.fromEntries([...searchParams])
   return searchParamsObject
 }
 

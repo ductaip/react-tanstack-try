@@ -1,21 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { getStudents } from 'apis/students.api'
 import classNames from 'classnames'
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
-import { Student, Students as studentType } from 'types/students.type'
 import { useQueryString } from 'utils/utils'
 
 const LIMIT = 10
 export default function Students() { 
   //query string
   const queryString : {page?: string} = useQueryString()
-  const page = Number(queryString.page) || 1
+  const page = Number(queryString.page) || 1 
 
   //fetch students by using useQuery
   const {data, isLoading} = useQuery({
     queryKey: ['students', page], //deep comparison
-    queryFn: () => getStudents(page , LIMIT),
+    queryFn: () => getStudents(page, LIMIT),
     keepPreviousData: true
   })
 
