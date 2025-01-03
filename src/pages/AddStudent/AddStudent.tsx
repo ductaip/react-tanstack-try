@@ -1,14 +1,14 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useMatch, useParams } from "react-router-dom"
 import http from '../../utils/http'
-import { addStudent, getStudent } from "apis/students.api"
+import { addStudent, getStudent, updateStudent } from "apis/students.api"
 import { Student } from "types/students.type"
 import { useMemo, useState } from "react"
 import { isAxiosError, useQueryString } from "utils/utils"
 import classNames from "classnames"
 import { ToastContainer, toast } from 'react-toastify';
 
-type FormStateType = Omit<Student, 'id'>
+type FormStateType = Omit<Student, 'id'> | Student
 const initialFormState: FormStateType = {
   avatar: '',
   email: '',
@@ -30,7 +30,7 @@ export default function AddStudent() {
   const { id } = useParams<{ id: string }>()
   console.log(id)
 
-  const {mutate, error, data, reset} = useMutation({
+  const addStudentMutation = useMutation({
     mutationFn: (body: FormStateType) => addStudent(body)
   })
 
@@ -43,27 +43,39 @@ export default function AddStudent() {
     }
   })
 
+  const updateStudentMutation = useMutation({
+    mutationFn: (_) => updateStudent(id as string, formState as Student)
+  })
 
   const errorForm: FormError = useMemo(() => {
-    if(isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
+    const error = isAddMode ? addStudentMutation.error : updateStudentMutation.error
+    if (isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
       return error.response?.data.error
     }
     return null
-  }, [error])
+  }, [addStudentMutation.error, isAddMode, updateStudentMutation.error])
 
   const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState((prev) => ({...prev, [name]: event.target.value}))
-    if (data || error) reset()
+    if (addStudentMutation.data || addStudentMutation.error) addStudentMutation.reset()
   }
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    mutate(formState, {
-      onSuccess: () => {
-        setFormState(initialFormState)
-        toast.success('Student added successfully')
-      }
-    })
+    if (isAddMode) {
+      addStudentMutation.mutate(formState, {
+        onSuccess: (_) => {
+          setFormState(initialFormState)
+          toast.success('Student added successfully')
+        }
+      })
+    } else {
+      updateStudentMutation.mutate(undefined, {
+        onSuccess: (_) => {
+          toast.success('Student updated successfully')
+        }
+      })
+    }
     // console.log("check>>>>",formState)
   }
 
