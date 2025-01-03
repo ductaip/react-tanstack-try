@@ -5,6 +5,8 @@ import { addStudent } from "apis/students.api"
 import { Student } from "types/students.type"
 import { useMemo, useState } from "react"
 import { isAxiosError } from "utils/utils"
+import classNames from "classnames"
+import { ToastContainer, toast } from 'react-toastify';
 
 type FormStateType = Omit<Student, 'id'>
 const initialFormState: FormStateType = {
@@ -26,9 +28,11 @@ export default function AddStudent() {
   const addMatch = useMatch('/students/add')
   const isAddMode = Boolean(addMatch)
 
-  const {mutate, error} = useMutation({
+  const {mutate, error, data, reset} = useMutation({
     mutationFn: (body: FormStateType) => addStudent(body)
   })
+ 
+  
 
   const errorForm: FormError = useMemo(() => {
     if(isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
@@ -37,13 +41,20 @@ export default function AddStudent() {
     return null
   }, [error])
 
-  const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => 
+  const handleChange = (name: keyof FormStateType) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFormState((prev) => ({...prev, [name]: event.target.value}))
+    if(data || error) reset()
+  } 
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    mutate(formState)
-    // console.log(formState)
+    mutate(formState, {
+      onSuccess: () => {
+        setFormState(initialFormState)
+        toast.success('Student added successfully')
+      }
+    })
+    // console.log("check>>>>",formState)
   }
   return (
     <div>
@@ -51,12 +62,13 @@ export default function AddStudent() {
       <form className='mt-6' onSubmit={handleSubmit}>
         <div className='group relative z-0 mb-6 w-full'>
           <input
-            type='email'
+            type='text'
             name='floating_email'
             id='floating_email'
-            className='peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 '
+            className={classNames('peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 ', {
+              'border-red-500 ': errorForm?.email
+            })}
             placeholder=' '
-            required
             value={formState.email}
             onChange={handleChange('email')}
           />
@@ -66,7 +78,11 @@ export default function AddStudent() {
           >
             Email address
           </label>
-          
+          {errorForm && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-500">
+                  <span className="font-medium">Oops!</span> {errorForm.email}
+                </p>
+          )}
         </div>
 
         <div className='group relative z-0 mb-6 w-full'>
@@ -219,6 +235,7 @@ export default function AddStudent() {
           Submit
         </button>
       </form>
+      <ToastContainer />
     </div>
   )
 }
