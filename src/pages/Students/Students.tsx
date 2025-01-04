@@ -1,13 +1,15 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { deleteStudent, getStudents } from 'apis/students.api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { deleteStudent, getStudent, getStudents } from 'apis/students.api'
 import classNames from 'classnames'
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryString } from 'utils/utils'
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify'
 
 const LIMIT = 10
 export default function Students() { 
+  const queryClient = useQueryClient()
+
   //query string
   const queryString : {page?: string} = useQueryString()
   const page = Number(queryString.page) || 1
@@ -28,7 +30,17 @@ export default function Students() {
 
   const handleDelete = (id: number) => {
     deleteStudentMutation.mutate(id, {
-      onSuccess: () => toast.success('Delete student successfully'),
+      onSuccess: () => {
+        toast.success('Delete student successfully')
+        queryClient.invalidateQueries({ queryKey: ['students', page] })
+      }
+    })
+  }
+
+  const handlePrefetchStudent = (id: number) => {
+    queryClient.prefetchQuery(['student', String(id)], {
+      queryFn: () => getStudent(id),
+      staleTime: 1000 * 10   //10s
     })
   }
 
@@ -80,8 +92,8 @@ export default function Students() {
             </thead>
             <tbody>
               {studentsQuery.data?.data.map((student, index) => (
-                <tr key={index} className='border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600'>
-                <td className='py-4 px-6'>{(page - 1) * 10 + index + 1}</td>
+                <tr onMouseEnter={() => handlePrefetchStudent(student.id)} key={index} className='border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600'>
+                <td className='py-4 px-6'>{student.id}</td>
                 <td className='py-4 px-6'>
                   <img
                     src={student.avatar}
@@ -94,7 +106,7 @@ export default function Students() {
                   </th>
                   <td className='py-4 px-6'>{student.email}</td>
                   <td className='py-4 px-6 text-right'>
-                    <Link to= {`/students/${(page - 1) * 10 + index + 1}`} className='mr-5 font-medium text-blue-600 hover:underline dark:text-blue-500'>
+                    <Link to= {`/students/${student.id}`} className='mr-5 font-medium text-blue-600 hover:underline dark:text-blue-500'>
                       Edit
                     </Link>
                     <button onClick={() => handleDelete(student.id)} className='font-medium text-red-600 dark:text-red-500'>Delete</button>

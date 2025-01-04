@@ -1,10 +1,9 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMatch, useParams } from "react-router-dom"
-import http from '../../utils/http'
 import { addStudent, getStudent, updateStudent } from "apis/students.api"
 import { Student } from "types/students.type"
-import { useMemo, useState } from "react"
-import { isAxiosError, useQueryString } from "utils/utils"
+import { useEffect, useMemo, useState } from "react"
+import { isAxiosError } from "utils/utils"
 import classNames from "classnames"
 import { ToastContainer, toast } from 'react-toastify';
 
@@ -28,20 +27,24 @@ export default function AddStudent() {
   const addMatch = useMatch('/students/add')
   const isAddMode = Boolean(addMatch)
   const { id } = useParams<{ id: string }>()
-  console.log(id)
+  const queryClient = useQueryClient()
 
   const addStudentMutation = useMutation({
     mutationFn: (body: FormStateType) => addStudent(body)
   })
 
-  useQuery({
+  const studentQuery = useQuery({
     queryKey: ['student', id],
     queryFn: () => getStudent(id as string),
     enabled: id !== undefined,
-    onSuccess: (data) => {
-      setFormState(data.data)
-    }
+    staleTime: 1000 * 5 //don't refetch within 5s
   })
+
+  //set form state for update function automatic because prefetchQuery won't trigger re-render
+  useEffect(() => {
+    if (studentQuery.data) setFormState(studentQuery.data.data)
+  }, [studentQuery.data])
+
 
   const updateStudentMutation = useMutation({
     mutationFn: (_) => updateStudent(id as string, formState as Student)
@@ -49,9 +52,7 @@ export default function AddStudent() {
 
   const errorForm: FormError = useMemo(() => {
     const error = isAddMode ? addStudentMutation.error : updateStudentMutation.error
-    if (isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) {
-      return error.response?.data.error
-    }
+    if (isAxiosError<({error: FormError})>(error) && error?.response?.status === 422) return error.response?.data.error
     return null
   }, [addStudentMutation.error, isAddMode, updateStudentMutation.error])
 
@@ -71,8 +72,9 @@ export default function AddStudent() {
       })
     } else {
       updateStudentMutation.mutate(undefined, {
-        onSuccess: (_) => {
+        onSuccess: (data) => {
           toast.success('Student updated successfully')
+          queryClient.setQueryData(['student', id], data)
         }
       })
     }

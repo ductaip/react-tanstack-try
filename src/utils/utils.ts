@@ -9,4 +9,4 @@ export const useQueryString = () => {
 
 export function isAxiosError<T>(error: unknown) : error is AxiosError<T> {
   return axios.isAxiosError(error)
-} 
+}
